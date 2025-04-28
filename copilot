@@ -1,1 +1,79 @@
+local AnimatedUILib = {}
 
+-- Configuration
+AnimatedUILib.Config = {
+    ScriptName = "AnimatedUI",
+    Theme = "Dark",
+    Features = {}
+}
+
+-- Function to Add Features
+function AnimatedUILib:AddFeature(name, feature)
+    self.Config.Features[name] = feature
+end
+
+-- Function to Create a Button
+function AnimatedUILib:CreateButton(parent, text, callback)
+    local button = Instance.new("TextButton")
+    button.Parent = parent
+    button.Text = text
+    button.Size = UDim2.new(0, 150, 0, 50)
+    button.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    button.TextColor3 = Color3.fromRGB(255, 255, 255)
+    button.Font = Enum.Font.SourceSans
+    button.TextSize = 24
+    button.MouseButton1Click:Connect(callback)
+
+    -- Add Hover Effect
+    button.MouseEnter:Connect(function()
+        button.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+    end)
+    button.MouseLeave:Connect(function()
+        button.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    end)
+
+    return button
+end
+
+-- Function to Create a Frame
+function AnimatedUILib:CreateFrame(parent)
+    local frame = Instance.new("Frame")
+    frame.Parent = parent
+    frame.Size = UDim2.new(0, 300, 0, 400)
+    frame.Position = UDim2.new(0.5, -150, 0.5, -200)
+    frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    frame.BorderSizePixel = 0
+
+    -- Add Drop Shadow Effect
+    local shadow = Instance.new("ImageLabel")
+    shadow.Parent = frame
+    shadow.AnchorPoint = Vector2.new(0.5, 0.5)
+    shadow.Position = UDim2.new(0.5, 0, 0.5, 5)
+    shadow.Size = UDim2.new(1, 10, 1, 10)
+    shadow.BackgroundTransparency = 1
+    shadow.Image = "rbxassetid://1316045217"
+    shadow.ImageColor3 = Color3.fromRGB(0, 0, 0)
+    shadow.ImageTransparency = 0.6
+    shadow.ScaleType = Enum.ScaleType.Slice
+    shadow.SliceCenter = Rect.new(10, 10, 118, 118)
+
+    return frame
+end
+
+-- Function to Animate UI
+function AnimatedUILib:AnimateUI(element, animationType, duration)
+    if animationType == "FadeIn" then
+        element.BackgroundTransparency = 1
+        element:TweenProperty("BackgroundTransparency", 0, Enum.EasingDirection.InOut, Enum.EasingStyle.Quad, duration, true)
+    elseif animationType == "ScaleUp" then
+        element:TweenSize(
+            UDim2.new(1, 0, 1, 0),
+            Enum.EasingDirection.InOut,
+            Enum.EasingStyle.Back,
+            duration,
+            true
+        )
+    end
+end
+
+return AnimatedUILib
