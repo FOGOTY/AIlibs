@@ -1,1 +1,1565 @@
 
+--!strict
+-- Enhanced Interactive UI Library for Roblox
+-- ----------------------------------------
+-- A comprehensive library for creating modern, interactive, and customizable user interfaces in Roblox.
+--
+-- Features:
+--     -   Intuitive API for creating UI elements
+--     -   Smooth animations and transitions
+--     -   Customizable themes and styles
+--     -   Support for various input methods
+--     -   Modular design for easy extension
+--     -   Configurable settings
+--
+-- Key Concepts:
+--     -   Elements: Base UI components (e.g., buttons, labels, containers)
+--     -   Animations: Effects applied to elements (e.g., fade, slide, rotate)
+--     -   Themes: Sets of predefined styles
+--     -   Layouts: Automatic positioning of elements
+--
+-- Usage:
+--     1.  Require this module in your Roblox script.
+--     2.  Create a configuration table.
+--     3.  Initialize the UI library with the configuration.
+--     4.  Create UI elements and add them to the hierarchy.
+--     5.  Apply animations and customize styles as needed.
+--
+-- Example:
+--
+--    local UI = require(path.to.this.module)
+--
+--    local config = {
+--        ScriptName = "MyCoolUI",
+--        Creator = "YourName",
+--        AutoLoad = true,
+--        -- Add other configuration options here
+--    }
+--
+--    local myUI = UI.new(config)
+--
+--    local window = myUI:CreateWindow({
+--        Title = "My Window",
+--        Size = UDim2.new(0.5, 0, 0.6, 0),
+--        Position = UDim2.new(0.25, 0, 0.2, 0),
+--    })
+--
+--    local button = window:CreateButton({
+--        Text = "Click Me",
+--        Size = UDim2.new(1, 0, 0.1, 0),
+--        Position = UDim2.new(0, 0, 0.2, 0),
+--        OnClick = function()
+--            print("Button Clicked!")
+--        end,
+--    })
+--
+--    button:Animate({
+--        Property = "BackgroundColor3",
+--        EndValue = Color3.fromRGB(255, 255, 0),
+--        Duration = 0.5,
+--        EasingStyle = Enum.EasingStyle.Quad,
+--        EasingDirection = Enum.EasingDirection.Out,
+--    })
+--
+--    -- More UI element creation and customization...
+--
+--
+-- Contributing:
+--     -   Fork this repository.
+--     -   Create a new branch for your feature or bug fix.
+--     -   Submit a pull request.
+--
+-- License:
+--     MIT License (See LICENSE file for details)
+--
+--
+-- Module Implementation
+-- ---------------------
+
+local UI = {}
+UI.__index = UI
+
+-- Configuration
+local DEFAULT_CONFIG = {
+    ScriptName = "EnhancedUI",  -- Name of the UI script/instance
+    Creator = "Anonymous",     -- Name of the UI creator
+    AutoLoad = true,         -- Automatically load the UI on initialization
+    Theme = "Dark",          -- Default theme (can be "Dark", "Light", or custom)
+    AnimationSpeed = 0.3,    -- Default animation speed
+    Font = "Arial",          -- Default font
+    Size = UDim2.new(0, 500, 0, 300), -- Default UI Size
+    Position = UDim2.new(0.3, 0, 0.2, 0),
+    Visible = true,
+}
+
+-- Available Themes
+local THEMES = {
+    Dark = {
+        BackgroundColor = Color3.fromRGB(30, 30, 30),
+        PanelColor = Color3.fromRGB(45, 45, 45),
+        TextColor = Color3.fromRGB(255, 255, 255),
+        ButtonColor = Color3.fromRGB(60, 60, 60),
+        ButtonHoverColor = Color3.fromRGB(80, 80, 80),
+        ButtonPressedColor = Color3.fromRGB(100, 100, 100),
+        AccentColor = Color3.fromRGB(0, 150, 255), -- Example accent color
+        BorderColor = Color3.fromRGB(100,100,100),
+        DropdownColor = Color3.fromRGB(70,70,70),
+        InputFieldColor = Color3.fromRGB(50,50,50),
+        CheckboxColor = Color3.fromRGB(60,60,60),
+        SliderBarColor = Color3.fromRGB(60,60,60),
+        SliderThumbColor = Color3.fromRGB(120,120,120),
+        },
+    Light = {
+        BackgroundColor = Color3.fromRGB(240, 240, 240),
+        PanelColor = Color3.fromRGB(255, 255, 255),
+        TextColor = Color3.fromRGB(0, 0, 0),
+        ButtonColor = Color3.fromRGB(220, 220, 220),
+        ButtonHoverColor = Color3.fromRGB(200, 200, 200),
+        ButtonPressedColor = Color3.fromRGB(180, 180, 180),
+        AccentColor = Color3.fromRGB(0, 120, 215),
+        BorderColor = Color3.fromRGB(150,150,150),
+        DropdownColor = Color3.fromRGB(230,230,230),
+        InputFieldColor = Color3.fromRGB(255,255,255),
+        CheckboxColor = Color3.fromRGB(220,220,220),
+        SliderBarColor = Color3.fromRGB(200,200,200),
+        SliderThumbColor = Color3.fromRGB(150,150,150),
+    },
+    -- Add more themes here
+}
+
+-- Easing Functions (for animations)
+local Easing = {
+    Linear = function(t)
+        return t
+    end,
+    QuadIn = function(t)
+        return t * t
+    end,
+    QuadOut = function(t)
+        return 1 - (1 - t) * (1 - t)
+    end,
+    QuadInOut = function(t)
+        if t < 0.5 then
+            return 2 * t * t
+        else
+            return 1 - 2 * (1 - t) * (1 - t)
+        end
+    end,
+    CubicIn = function(t)
+        return t * t * t
+    end,
+    CubicOut = function(t)
+        return 1 - (1 - t) * (1 - t) * (1 - t)
+    end,
+    CubicInOut = function(t)
+        if t < 0.5 then
+            return 4 * t * t * t
+        else
+            return 1 - 4 * (1 - t) * (1 - t) * (1 - t)
+        end
+    end,
+    QuartIn = function(t)
+        return t * t * t * t
+    end,
+    QuartOut = function(t)
+        return 1 - (1 - t) * (1 - t) * (1 - t) * (1 - t)
+    end,
+    QuartInOut = function(t)
+        if t < 0.5 then
+            return 8 * t * t * t * t
+        else
+            return 1 - 8 * (1 - t) * (1 - t) * (1 - t) * (1 - t)
+        end
+    end,
+    QuintIn = function(t)
+        return t * t * t * t * t
+    end,
+    QuintOut = function(t)
+        return 1 - (1 - t) * (1 - t) * (1 - t) * (1 - t) * (1 - t)
+    end,
+    QuintInOut = function(t)
+        if t < 0.5 then
+            return 16 * t * t * t * t * t
+        else
+            return 1 - 16 * (1 - t) * (1 - t) * (1 - t) * (1 - t) * (1 - t)
+        end
+    end,
+    SineIn = function(t)
+        return 1 - math.cos(t * math.pi / 2)
+    end,
+    SineOut = function(t)
+        return math.sin(t * math.pi / 2)
+    end,
+    SineInOut = function(t)
+        return (1 - math.cos(t * math.pi)) / 2
+    end,
+    ExpoIn = function(t)
+        if t == 0 then return 0 end
+        return math.pow(2, 10 * (t - 1))
+    end,
+    ExpoOut = function(t)
+        if t == 1 then return 1 end
+        return 1 - math.pow(2, -10 * t)
+    end,
+    ExpoInOut = function(t)
+        if t == 0 then return 0 end
+        if t == 1 then return 1 end
+        t = t * 2
+        if t < 1 then
+            return 0.5 * math.pow(2, 10 * (t - 1))
+        else
+            t = t - 1
+            return 0.5 * (2 - math.pow(2, -10 * t))
+        end
+    end,
+    CircIn = function(t)
+        return 1 - math.sqrt(1 - t * t)
+    end,
+    CircOut = function(t)
+        t = t - 1
+        return math.sqrt(1 - t * t)
+    end,
+    CircInOut = function(t)
+        t = t * 2
+        if t < 1 then
+            return -0.5 * (math.sqrt(1 - t * t) - 1)
+        else
+            t = t - 2
+            return 0.5 * (math.sqrt(1 - t * t) + 1)
+        end
+    end,
+    ElasticIn = function(t)
+        if t == 0 then return 0 end
+        if t == 1 then return 1 end
+        local p = 0.3
+        local a = 1
+        local s = p / 4
+        local t2 = t - 1
+        return -(a * math.pow(2, 10 * t2) * math.sin((t2 - s) * (2 * math.pi) / p))
+    end,
+    ElasticOut = function(t)
+        if t == 0 then return 0 end
+        if t == 1 then return 1 end
+        local p = 0.3
+        local a = 1
+        local s = p / 4
+        return a * math.pow(2, -10 * t) * math.sin((t - s) * (2 * math.pi) / p) + 1
+    end,
+    ElasticInOut = function(t)
+        if t == 0 then return 0 end
+        t = t * 2
+        if t < 1 then
+            t = t - 1
+            local p = 0.3
+            local a = 1
+            local s = p / 4
+            return -0.5 * (a * math.pow(2, 10 * t) * math.sin((t - s) * (2 * math.pi) / p))
+        else
+            t = t - 1
+            local p = 0.3
+            local a = 1
+            local s = p / 4
+            return a * math.pow(2, -10 * t) * math.sin((t - s) * (2 * math.pi) / p) * 0.5 + 1
+        end
+    end,
+    BackIn = function(t)
+        local s = 1.70158
+        return t * t * ((s + 1) * t - s)
+    end,
+    BackOut = function(t)
+        local s = 1.70158
+        t = t - 1
+        return t * t * ((s + 1) * t + s) + 1
+    end,
+    BackInOut = function(t)
+        local s = 1.70158 * 1.525
+        t = t * 2
+        if t < 1 then
+            return 0.5 * (t * t * ((s + 1) * t - s))
+        else
+            t = t - 2
+            return 0.5 * (t * t * ((s + 1) * t + s) + 2)
+        end
+    end,
+    BounceIn = function(t)
+        return 1 - Easing.BounceOut(1 - t)
+    end,
+    BounceOut = function(t)
+        if t < (1 / 2.75) then
+            return 7.5625 * t * t
+        elseif t < (2 / 2.75) then
+            t = t - (1.5 / 2.75)
+            return 7.5625 * t * t + 0.75
+        elseif t < (2.5 / 2.75) then
+            t = t - (2.25 / 2.75)
+            return 7.5625 * t * t + 0.9375
+        else
+            t = t - (2.625 / 2.75)
+            return 7.5625 * t * t + 0.984375
+        end
+    end,
+    BounceInOut = function(t)
+        if t < 0.5 then
+            return (1 - Easing.BounceOut(1 - 2 * t)) / 2
+        else
+            return (Easing.BounceOut(2 * t - 1) + 1) / 2
+        end
+    end,
+}
+
+-- Base Element Class
+local UIElement = {}
+UIElement.__index = UIElement
+
+--- Creates a new UI element.  This is a *base* class; use derived classes like Button, Label, etc.
+-- @param params table A table of properties for the UI element.
+--                       - `Name` (string, optional): The name of the element.
+--                       - `Size` (UDim2, optional): The size of the element.
+--                       - `Position` (UDim2, optional): The position of the element.
+--                       - `Parent` (Instance, optional): The parent of the element.
+--                       - `Visible` (bool, optional): Whether the element is visible.
+--                       - `ZIndex` (number, optional): The Z-index of the element.
+--                       - `BackgroundColor3` (Color3, optional): Background color.
+--                       - `BorderColor3` (Color3, optional): Border color
+--                       - `BorderSizePixel` (number, optional): Border size
+-- @return UIElement The new UI element.
+function UIElement.new(params)
+    local self = setmetatable({}, UIElement)
+
+    self.Instance = Instance.new("Frame") --  Base instance is a Frame
+    self.Name = params.Name or "UIElement"
+    self.Instance.Name = self.Name
+    self.Size = params.Size or UDim2.new(0, 100, 0, 50)
+    self.Position = params.Position or UDim2.new(0, 0, 0, 0)
+    self.Parent = params.Parent
+    self.Visible = params.Visible ~= nil and params.Visible or true
+    self.ZIndex = params.ZIndex or 1
+    self.BackgroundColor3 = params.BackgroundColor3 or Color3.fromRGB(255, 255, 255)
+    self.BorderColor = params.BorderColor3 or Color3.fromRGB(0,0,0)
+    self.BorderSizePixel = params.BorderSizePixel or 0
+
+    self.Animations = {} -- Store active animations
+    self.EventConnections = {} --Store event connections
+
+    self:ApplyStyle(params) -- Apply initial style
+
+    if self.Parent then
+        self.Instance.Parent = self.Parent
+    end
+
+    return self
+end
+
+--- Applies a style to the UI element.
+-- @param style table A table of style properties.
+function UIElement:ApplyStyle(style)
+    if not style then return end
+    if style.Size then
+        self.Size = style.Size
+        self.Instance.Size = self.Size
+    end
+    if style.Position then
+        self.Position = style.Position
+        self.Instance.Position = self.Position
+    end
+    if style.Visible ~= nil then
+        self.Visible = style.Visible
+        self.Instance.Visible = self.Visible
+    end
+    if style.ZIndex then
+        self.ZIndex = style.ZIndex
+        self.Instance.ZIndex = self.ZIndex
+    end
+    if style.BackgroundColor3 then
+        self.BackgroundColor3 = style.BackgroundColor3
+        self.Instance.BackgroundColor3 = self.BackgroundColor3
+    end
+    if style.BorderColor then
+        self.BorderColor = style.BorderColor
+        self.Instance.BorderColor3 = self.BorderColor
+    end
+     if style.BorderSizePixel then
+        self.BorderSizePixel = style.BorderSizePixel
+        self.Instance.BorderSizePixel = self.BorderSizePixel
+    end
+    if style.Name then
+        self.Name = style.Name
+        self.Instance.Name = self.Name
+    end
+end
+
+--- Destroys the UI element and any associated resources.
+function UIElement:Destroy()
+    -- Stop all animations
+    for _, anim in pairs(self.Animations) do
+        if anim.Connection then
+            anim.Connection:Disconnect()
+        end
+    end
+    self.Animations = {}
+
+    -- Disconnect all events
+    for _, connection in pairs(self.EventConnections) do
+        connection:Disconnect()
+    end
+    self.EventConnections = {}
+
+    -- Destroy the instance
+    if self.Instance then
+        self.Instance:Destroy()
+    end
+    self.Instance = nil
+end
+
+--- Animates a property of the UI element.
+-- @param params table A table of animation parameters:
+--                       - `Property` (string, required): The property to animate (e.g., "Position", "Size", "BackgroundColor3").
+--                       - `EndValue` (any, required): The ending value of the property.
+--                       - `Duration` (number, optional): The duration of the animation in seconds (default: 0.3).
+--                       - `EasingStyle` (Enum.EasingStyle, optional): The easing style (default: Enum.EasingStyle.Linear).
+--                       - `EasingDirection` (Enum.EasingDirection, optional): The easing direction (default: Enum.EasingDirection.Out).
+--                       - `Callback` (function, optional): A function to call when the animation is complete.
+--                       - `Repeat` (number, optional): Number of times to repeat.  0 for infinite (default: 1).
+--                       - `Delay` (number, optional): Time to wait before starting the animation.
+function UIElement:Animate(params)
+    local property = params.Property
+    local endValue = params.EndValue
+    local duration = params.Duration or self.UI.Config.AnimationSpeed
+    local easingStyle = params.EasingStyle or Enum.EasingStyle.Linear
+    local easingDirection = params.EasingDirection or Enum.EasingDirection.Out
+    local callback = params.Callback
+    local repeatCount = params.Repeat or 1
+    local delay = params.Delay or 0
+
+    if not property or endValue == nil then
+        warn("UIElement:Animate - Missing required parameters: Property and EndValue")
+        return
+    end
+
+    local startValue = self[property]
+    if startValue == nil then
+        warn("UIElement:Animate - Invalid property: " .. property)
+        return
+    end
+
+    local startTime = time() + delay
+    local endTime = startTime + duration
+    local id = #self.Animations + 1
+    local repeatCounter = 0
+    local isReversed = false
+
+    local function applyValue(value)
+        if self.Instance then
+           self[property] = value
+           self.Instance[property] = value
+        end
+    end
+
+    local function animateStep()
+        local currentTime = time()
+
+        if currentTime < startTime then
+            return -- Wait for delay
+        end
+
+        local t = math.clamp((currentTime - startTime) / duration, 0, 1)
+        local easingFunc = Easing[easingStyle] or Easing.Linear
+        local easedT = easingFunc(t)
+
+        if easingDirection == Enum.EasingDirection.In then
+            easedT = easedT
+        elseif easingDirection == Enum.EasingDirection.Out then
+            easedT = 1 - easingFunc(1 - t)
+        elseif easingDirection == Enum.EasingDirection.InOut then
+            if t < 0.5 then
+                easedT = easingFunc(t * 2) / 2
+            else
+                easedT = (2 - easingFunc(2 - 2 * t)) / 2
+            end
+        end
+
+        local currentValue
+        if typeof(startValue) == "number" then
+            currentValue = startValue + (endValue - startValue) * easedT
+        elseif typeof(startValue) == "Color3" then
+            currentValue = startValue:Lerp(endValue, easedT)
+        elseif typeof(startValue) == "UDim2" then
+            local xStart = startValue.X
+            local yStart = startValue.Y
+            local xEnd = endValue.X
+            local yEnd = endValue.Y
+
+            currentValue = UDim2.new(
+                xStart.Scale + (xEnd.Scale - xStart.Scale) * easedT,
+                xStart.Offset + (xEnd.Offset - xStart.Offset) * easedT,
+                yStart.Scale + (yEnd.Scale - yStart.Scale) * easedT,
+                yStart.Offset + (yEnd.Offset - yStart.Offset) * easedT
+            )
+        else
+            warn("UIElement:Animate - Unsupported property type: " .. typeof(startValue))
+            self.Animations[id] = nil
+            return
+        end
+
+        applyValue(currentValue)
+
+        if currentTime >= endTime then
+            applyValue(endValue) -- Ensure the final value is set
+            if repeatCounter < repeatCount - 1 or repeatCount == 0 then
+                repeatCounter += 1
+                startTime = currentTime
+                endTime = currentTime + duration
+                if params.Reversed then
+                    isReversed = not isReversed
+                    local temp = startValue
+                    startValue = endValue
+                    endValue = temp
+                end
+            else
+                if anim.Connection then
+                    anim.Connection:Disconnect()
+                end
+                self.Animations[id] = nil
+                if callback then
+                    callback()
+                end
+            end
+        end
+    end
+
+    local anim = {
+        Property = property,
+        EndValue = endValue,
+        Duration = duration,
+        EasingStyle = easingStyle,
+        EasingDirection = easingDirection,
+        Callback = callback,
+        StartTime = startTime,
+        EndTime = endTime,
+        Connection = game:GetService("RunService").RenderStepped:Connect(animateStep),
+        RepeatCount = repeatCount,
+        RepeatCounter = repeatCounter,
+        IsReversed = isReversed,
+    }
+    self.Animations[id] = anim
+    return anim
+end
+
+--- Stops all animations for this element
+function UIElement:StopAnimations()
+    for _, anim in pairs(self.Animations) do
+        if anim.Connection then
+            anim.Connection:Disconnect()
+        end
+    end
+    self.Animations = {}
+end
+
+--- Gets the absolute position of the element.
+-- @return UDim2 The absolute position.
+function UIElement:GetAbsolutePosition()
+    return self.Instance.AbsolutePosition
+end
+
+--- Gets the absolute size of the element.
+-- @return Vector2 The absolute size.
+function UIElement:GetAbsoluteSize()
+    return self.Instance.AbsoluteSize
+end
+
+-- Label Class
+local Label = {}
+Label.__index = Label
+setmetatable(Label, UIElement)
+
+--- Creates a new Label element.
+-- @param params table A table of properties for the Label:
+--                       - `Text` (string, optional): The text of the label.
+--                       - `Font` (Enum.Font, optional): The font of the label.
+--                       - `TextSize` (number, optional): The size of the text.
+--                       - `TextColor3` (Color3, optional): The color of the text.
+--                       - `TextWrapped` (bool, optional): Whether the text should wrap.
+--                       - All properties from UIElement.new.
+-- @return Label The new Label.
+function Label.new(params)
+    local self = setmetatable(UIElement.new(params), Label)
+    self.Instance.BackgroundTransparency = 1
+    self.Instance.TextLabel = true -- Use TextLabel properties.
+    self.Instance.RichText = true
+
+    self.Text = params.Text or ""
+    self.Font = params.Font or "Arial"
+    self.TextSize = params.TextSize or 14
+    self.TextColor = params.TextColor3 or Color3.fromRGB(255, 255, 255)
+    self.TextWrapped = params.TextWrapped or false
+
+    self:ApplyStyle(params)
+
+    return self
+end
+
+--- Applies a style to the Label.
+-- @param style table A table of style properties.
+function Label:ApplyStyle(style)
+    UIElement:ApplyStyle(style) -- Call base class method
+    if not style then return end
+
+    if style.Text then
+        self.Text = style.Text
+        self.Instance.Text = self.Text
+    end
+    if style.Font then
+        self.Font = style.Font
+        self.Instance.Font = style.Font
+    end
+    if style.TextSize then
+        self.TextSize = style.TextSize
+        self.Instance.TextSize = self.TextSize
+    end
+    if style.TextColor then
+        self.TextColor = style.TextColor
+        self.Instance.TextColor3 = style.TextColor
+    end
+    if style.TextWrapped then
+        self.TextWrapped = style.TextWrapped
+        self.Instance.TextWrapped = self.TextWrapped
+    end
+end
+
+-- Button Class
+local Button = {}
+Button.__index = Button
+setmetatable(Button, UIElement)
+
+--- Creates a new Button element.
+-- @param params table A table of properties for the Button:
+--                       - `Text` (string, optional): The text of the button.
+--                       - `Font` (Enum.Font, optional): The font of the button.
+--                       - `TextSize` (number, optional): The size of the text.
+--                       - `TextColor3` (Color3, optional): The color of the text.
+--                       - `BackgroundColor3` (Color3, optional): The background color of the button.
+--                       - `HoverColor` (Color3, optional): The hover color
+--                       - `PressedColor` (Color3, optional): The pressed color
+--                       - `OnClick` (function, optional): The function to call when the button is clicked.
+--                       - All properties from UIElement.new.
+-- @return Button The new Button.
+function Button.new(params)
+    local self = setmetatable(UIElement.new(params), Button)
+    self.Instance.TextLabel = true
+    self.Instance.RichText = true
+
+    self.Text = params.Text or ""
+    self.Font = params.Font or "Arial"
+    self.TextSize = params.TextSize or 14
+    self.TextColor = params.TextColor3 or Color3.fromRGB(255, 255, 255)
+    self.BackgroundColor = params.BackgroundColor3 or self.UI.Theme.ButtonColor
+    self.HoverColor = params.HoverColor or self.UI.Theme.ButtonHoverColor
+    self.PressedColor = params.PressedColor or self.UI.Theme.ButtonPressedColor
+    self.OnClick = params.OnClick
+
+    self.IsPressed = false
+    self.IsHovered = false
+
+    self:ApplyStyle(params)
+    self:ConnectEvents()
+
+    return self
+end
+
+--- Applies a style to the Button.
+-- @param style table A table of style properties.
+function Button:ApplyStyle(style)
+    UIElement:ApplyStyle(style)
+    if not style then return end
+
+    if style.Text then
+        self.Text = style.Text
+        self.Instance.Text = self.Text
+    end
+    if style.Font then
+        self.Font = style.Font
+        self.Instance.Font = style.Font
+    end
+    if style.TextSize then
+        self.TextSize = style.TextSize
+        self.Instance.TextSize = style.TextSize
+    end
+    if style.TextColor then
+        self.TextColor = style.TextColor
+        self.Instance.TextColor3 = style.TextColor
+    end
+    if style.BackgroundColor3 then
+        self.BackgroundColor = style.BackgroundColor3
+        self.Instance.BackgroundColor3 = self.BackgroundColor
+    end
+    if style.HoverColor then
+        self.HoverColor = style.HoverColor
+    end
+    if style.PressedColor then
+        self.PressedColor = style.PressedColor
+    end
+end
+
+function Button:ConnectEvents()
+    local inputBeganConnection
+    local inputEndedConnection
+    local mouseEnterConnection
+    local mouseLeaveConnection
+
+    local function onInputBegan(input, gameProcessedEvent)
+        if gameProcessedEvent then return end
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            local pos = input.Position
+            local absPos = self.Instance.AbsolutePosition
+            local absSize = self.Instance.AbsoluteSize
+
+            if pos.X >= absPos.X and pos.X <= absPos.X + absSize.X and
+               pos.Y >= absPos.Y and pos.Y <= absPos.Y + absSize.Y then
+                self.IsPressed = true
+                self.Instance.BackgroundColor3 = self.PressedColor
+            end
+        end
+    end
+
+    local function onInputEnded(input, gameProcessedEvent)
+        if gameProcessedEvent then return end
+         if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            if self.IsPressed then
+                self.IsPressed = false
+                self.Instance.BackgroundColor3 = self.BackgroundColor
+                if self.OnClick then
+                    self.OnClick()
+                end
+            end
+         end
+    end
+
+    local function onMouseEnter()
+        self.IsHovered = true
+        if not self.IsPressed then
+            self.Instance.BackgroundColor3 = self.HoverColor
+        end
+    end
+
+    local function onMouseLeave()
+        self.IsHovered = false
+        if not self.IsPressed then
+            self.Instance.BackgroundColor3 = self.BackgroundColor
+        end
+    end
+
+    inputBeganConnection = game:GetService("UserInputService").InputBegan:Connect(onInputBegan)
+    inputEndedConnection = game:GetService("UserInputService").InputEnded:Connect(onInputEnded)
+    mouseEnterConnection = self.Instance.MouseEnter:Connect(onMouseEnter)
+    mouseLeaveConnection = self.Instance.MouseLeave:Connect(onMouseLeave)
+
+    self.EventConnections = {
+        inputBeganConnection = inputBeganConnection,
+        inputEndedConnection = inputEndedConnection,
+        mouseEnterConnection = mouseEnterConnection,
+        mouseLeaveConnection = mouseLeaveConnection,
+    }
+end
+
+-- Window Class
+local Window = {}
+Window.__index = Window
+setmetatable(Window, UIElement)
+
+--- Creates a new Window element.
+-- @param params table A table of properties:
+--      - `Title` (string, optional): Title of the window
+--     -   All properties from UIElement.new.
+-- @return Window
+function Window.new(params)
+    local self = setmetatable(UIElement.new(params), Window)
+    self.Instance.BackgroundColor3 = self.UI.Theme.BackgroundColor
+    self.Instance.BorderColor3 = self.UI.Theme.BorderColor
+
+    self.Title = params.Title or "Window"
+    self.IsDraggable = params.IsDraggable ~= nil and params.IsDraggable or true
+    self.TitleBar = nil
+    self.ContentPane = nil
+    self.Elements = {}
+
+    self:MakeDraggable()
+    self:CreateTitleBar()
+    self:CreateContentPane()
+    self:ApplyStyle(params)
+
+    return self
+end
+
+function Window:ApplyStyle(style)
+    UIElement:ApplyStyle(style)
+    if not style then return end
+
+     if style.Title then
+        self.Title = style.Title
+        if self.TitleBarLabel then
+            self.TitleBarLabel.Text = self.Title
+        end
+    end
+end
+
+function Window:CreateTitleBar()
+    self.TitleBar = Instance.new("Frame", self.Instance)
+    self.TitleBar.Size = UDim2.new(1, 0, 0, 30)
+    self.TitleBar.Position = UDim2.new(0,0,0,0)
+    self.TitleBar.BackgroundColor3 = self.UI.Theme.PanelColor
+    self.TitleBar.BorderColor3 = self.UI.Theme.BorderColor
+
+    self.TitleBarLabel = Label.new({
+        Name = "TitleLabel",
+        Text = self.Title,
+        Font = "Arial",
+        TextSize = 16,
+        TextColor3 = self.UI.Theme.TextColor,
+        Position = UDim2.new(0, 10, 0, 5), -- Add some padding
+        Parent = self.TitleBar,
+        BackgroundColor3 = Color3.new(1,1,1),
+        BackgroundTransparency = 1,
+    })
+    self.TitleBarLabel.Instance.AnchorPoint = Vector2.new(0, 0)
+end
+
+function Window:CreateContentPane()
+    self.ContentPane = Instance.new("Frame", self.Instance)
+    self.ContentPane.Size = UDim2.new(1, 0, 1, -30)
+    self.ContentPane.Position = UDim2.new(0, 0, 0, 30)
+    self.ContentPane.BackgroundColor3 = Color3.new(1,1,1)
+    self.ContentPane.BackgroundTransparency = 1
+    self.ContentPane.ClipsDescendants = true
+end
+
+function Window:MakeDraggable()
+     if not self.IsDraggable then return end
+
+    local dragging = false
+    local dragStartPos = nil
+    local startPos = nil
+    local inputBeganConnection
+    local inputChangedConnection
+    local inputEndedConnection
+
+    local function onInputBegan(input, gameProcessedEvent)
+        if gameProcessedEvent then return end
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            local pos = input.Position
+            local absPos = self.TitleBar.AbsolutePosition
+            local absSize = self.TitleBar.AbsoluteSize
+
+            if pos.X >= absPos.X and pos.X <= absPos.X + absSize.X and
+               pos.Y >= absPos.Y and pos.Y <= absPos.Y + absSize.Y then
+                dragging = true
+                dragStartPos = Vector2.new(pos.X, pos.Y)
+                startPos = self.Instance.Position
+            end
+        end
+    end
+
+    local function onInputChanged(input)
+        if dragging then
+            local delta = Vector2.new(input.Position.X, input.Position.Y) - dragStartPos
+            self.Instance.Position = UDim2.new(
+                startPos.X.Scale, startPos.X.Offset + delta.X,
+                startPos.Y.Scale, startPos.Y.Offset + delta.Y
+            )
+        end
+    end
+
+    local function onInputEnded(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = false
+        end
+    end
+
+    inputBeganConnection = game:GetService("UserInputService").InputBegan:Connect(onInputBegan)
+    inputChangedConnection = game:GetService("UserInputService").InputChanged:Connect(onInputChanged)
+    inputEndedConnection = game:GetService("UserInputService").InputEnded:Connect(onInputEnded)
+
+    self.EventConnections.WindowDragBegan = inputBeganConnection
+    self.EventConnections.WindowDragChanged = inputChangedConnection
+    self.EventConnections.WindowDragEnded = inputEndedConnection
+end
+
+--- Adds a UI element to the window's content pane.
+-- @param element UIElement The UI element to add.
+function Window:AddElement(element)
+    element.Instance.Parent = self.ContentPane
+    table.insert(self.Elements, element)
+end
+
+-- InputField Class
+local InputField = {}
+InputField.__index = InputField
+setmetatable(InputField, UIElement)
+
+--- Creates a new InputField element.
+-- @param params table A table of properties for the InputField:
+--                       - `Text` (string, optional): The initial text of the input field.
+--                       - `PlaceholderText` (string, optional): The placeholder text.
+--                       - `Font` (Enum.Font, optional): The font of the text.
+--                       - `TextSize` (number, optional): The size of the text.
+--                       - `TextColor3` (Color3, optional): The color of the text.
+--                       - `BackgroundColor3` (Color3, optional): Background color.
+--                       - `PlaceholderColor3` (Color3, optional): Placeholder color
+--                       - All properties from UIElement.new.
+-- @return InputField The new InputField.
+function InputField.new(params)
+    local self = setmetatable(UIElement.new(params), InputField)
+    self.Instance.ClearTextOnFocus = false
+    self.Instance.TextEditable = true
+    self.Instance.Active = false
+
+    self.Text = params.Text or ""
+    self.PlaceholderText = params.PlaceholderText or ""
+    self.Font = params.Font or "Arial"
+    self.TextSize = params.TextSize or 14
+    self.TextColor = params.TextColor3 or Color3.fromRGB(255, 255, 255)
+    self.BackgroundColor = params.BackgroundColor3 or self.UI.Theme.InputFieldColor
+    self.PlaceholderColor = params.PlaceholderColor3 or Color3.fromRGB(150,150,150)
+
+    self:ApplyStyle(params)
+    self:ConnectEvents()
+
+    return self
+end
+
+function InputField:ApplyStyle(style)
+    UIElement:ApplyStyle(style)
+     if not style then return end
+
+    if style.Text then
+        self.Text = style.Text
+        self.Instance.Text = self.Text
+    end
+    if style.PlaceholderText then
+        self.PlaceholderText = style.PlaceholderText
+        self.Instance.PlaceholderText = self.PlaceholderText
+    end
+    if style.Font then
+        self.Font = style.Font
+        self.Instance.Font = style.Font
+    end
+    if style.TextSize then
+        self.TextSize = style.TextSize
+        self.Instance.TextSize = style.TextSize
+    end
+    if style.TextColor then
+        self.TextColor = style.TextColor
+        self.Instance.TextColor3 = style.TextColor
+    end
+     if style.BackgroundColor3 then
+        self.BackgroundColor = style.BackgroundColor3
+        self.Instance.BackgroundColor3 = self.BackgroundColor
+    end
+    if style.PlaceholderColor then
+        self.PlaceholderColor = style.PlaceholderColor
+        self.Instance.PlaceholderColor3 = style.PlaceholderColor
+    end
+end
+
+function InputField:ConnectEvents()
+    local focusGainedConnection
+    local focusLostConnection
+    local textChangedConnection
+
+    local function onFocusGained()
+        self.Instance.Active = true
+        self.Instance.Text = ""
+    end
+
+    local function onFocusLost()
+        self.Instance.Active = false
+        if self.Instance.Text == "" then
+            self.Instance.Text = self.PlaceholderText
+            self.Instance.TextColor3 = self.PlaceholderColor
+        else
+            self.Instance.TextColor3 = self.TextColor
+        end
+    end
+
+    local function onTextChanged()
+        self.Text = self.Instance.Text
+    end
+
+    focusGainedConnection = self.Instance.FocusGained:Connect(onFocusGained)
+    focusLostConnection = self.Instance.FocusLost:Connect(onFocusLost)
+    textChangedConnection = self.Instance.GetPropertyChangedSignal("Text"):Connect(onTextChanged)
+
+    self.EventConnections = {
+        focusGainedConnection = focusGainedConnection,
+        focusLostConnection = focusLostConnection,
+        textChangedConnection = textChangedConnection,
+    }
+end
+
+-- Dropdown Class
+local Dropdown = {}
+Dropdown.__index = Dropdown
+setmetatable(Dropdown, UIElement)
+
+--- Creates a new Dropdown element.
+-- @param params table A table of properties for the Dropdown:
+--                       - `Options` (table, required): A table of options (strings).
+--                       - `SelectedOption` (string, optional): The initially selected option.
+--                       - `Font` (Enum.Font, optional): The font.
+--                       - `TextSize` (number, optional): The size of the text.
+--                       - `TextColor3` (Color3, optional): The color of the text.
+--                       - `BackgroundColor3` (Color3, optional): Background color.
+--                       - `DropdownColor` (Color3, optional): Color of dropdown
+--                       - All properties from UIElement.new.
+-- @return Dropdown The new Dropdown.
+function Dropdown.new(params)
+    local self = setmetatable(UIElement.new(params), Dropdown)
+    self.Instance.BackgroundColor3 = self.UI.Theme.ButtonColor
+    self.Instance.ClipsDescendants = true
+
+    self.Options = params.Options or {}
+    self.SelectedOption = params.SelectedOption
+    self.Font = params.Font or "Arial"
+    self.TextSize = params.TextSize or 14
+    self.TextColor = params.TextColor3 or self.UI.Theme.TextColor
+    self.DropdownColor = params.DropdownColor or self.UI.Theme.DropdownColor
+
+    self.DropdownButton = nil
+    self.DropdownList = nil
+    self.IsOpen = false
+    self.EventConnections = {}
+
+    self:CreateDropdownButton()
+    self:CreateDropdownList()
+    self:ApplyStyle(params)
+    self:UpdateSelectedOption()
+
+    return self
+end
+
+function Dropdown:ApplyStyle(style)
+    UIElement:ApplyStyle(style)
+     if not style then return end
+
+    if style.Font then
+        self.Font = style.Font
+    end
+    if style.TextSize then
+        self.TextSize = style.TextSize
+    end
+    if style.TextColor then
+        self.TextColor = style.TextColor
+    end
+    if style.DropdownColor then
+        self.DropdownColor = style.DropdownColor
+        if self.DropdownList then
+           for _, optionButton in pairs(self.DropdownList.GetChildren()) do
+               if optionButton:IsA("TextButton") then
+                    optionButton.BackgroundColor3 = self.DropdownColor
+               end
+           end
+        end
+    end
+    if style.Options then
+        self.Options = style.Options
+        self:UpdateOptions()
+    end
+end
+
+function Dropdown:CreateDropdownButton()
+    self.DropdownButton = Instance.new("TextButton", self.Instance)
+    self.DropdownButton.Size = UDim2.new(1, 0, 1, 0)
+    self.DropdownButton.Position = UDim2.new(0, 0, 0, 0)
+    self.DropdownButton.BackgroundColor3 = self.UI.Theme.ButtonColor
+    self.DropdownButton.TextColor3 = self.TextColor
+    self.DropdownButton.Font = self.Font
+    self.DropdownButton.TextSize = self.TextSize
+    self.DropdownButton.Text = self.SelectedOption or "Select Option"
+    self.DropdownButton.TextAlign = Enum.TextXAlignment.Left
+    self.DropdownButton.TextXAlignment = Enum.TextXAlignment.Left
+    self.DropdownButton.Padding = UDim(0, 5)
+
+    local arrow = Instance.new("ImageLabel", self.DropdownButton)
+    arrow.Size = UDim2.new(0, 20, 0, 20)
+    arrow.Position = UDim2.new(1, -25, 0.5, -10)
+    arrow.Image = "rbxassetid://1034446767" -- Down arrow icon
+    arrow.BackgroundTransparency = 1
+    arrow.ImageColor3 = self.TextColor
+
+    self.EventConnections.DropdownButton = self.DropdownButton.MouseButton1Click:Connect(function()
+        self.IsOpen = not self.IsOpen
+        self.DropdownList.Visible = self.IsOpen
+    end)
+end
+
+function Dropdown:CreateDropdownList()
+    self.DropdownList = Instance.new("Frame", self.Instance)
+    self.DropdownList.Size = UDim2.new(1, 0, 0, 0)
+    self.DropdownList.Position = UDim2.new(0, 0, 1, 0)
+    self.DropdownList.BackgroundColor3 = self.DropdownColor
+    self.DropdownList.BorderColor3 = self.UI.Theme.BorderColor
+    self.DropdownList.BorderSizePixel = 1
+    self.DropdownList.Visible = false
+    self.DropdownList.ClipsDescendants = true
+    self.DropdownList.ZIndex = 5
+
+    self.ListLayout = Instance.new("UIListLayout", self.DropdownList)
+    self.ListLayout.Padding = UDim(0, 0)
+    self.ListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+
+    self:UpdateOptions()
+end
+
+function Dropdown:UpdateOptions()
+    -- Clear existing options
+    for _, optionButton in pairs(self.DropdownList:GetChildren()) do
+        if optionButton:IsA("TextButton") then
+            optionButton:Destroy()
+        end
+    end
+
+    -- Add new options
+    for i, optionText in ipairs(self.Options) do
+        local optionButton = Instance.new("TextButton", self.DropdownList)
+        optionButton.Size = UDim2.new(1, 0, 0, 30)
+        optionButton.BackgroundColor3 = self.DropdownColor
+        optionButton.TextColor3 = self.TextColor
+        optionButton.Font = self.Font
+        optionButton.TextSize = self.TextSize
+        optionButton.Text = optionText
+        optionButton.TextAlign = Enum.TextXAlignment.Left
+        optionButton.TextXAlignment = Enum.TextXAlignment.Left
+        optionButton.Padding = UDim(0, 5)
+        optionButton.ZIndex = 5
+
+        optionButton.MouseButton1Click:Connect(function()
+            self.SelectedOption = optionText
+            self.DropdownButton.Text = optionText
+            self.IsOpen = false
+            self.DropdownList.Visible = false
+            self:UpdateListSize()
+            if self.OnOptionSelected then
+                self.OnOptionSelected(optionText)
+            end
+        end)
+    end
+    self:UpdateListSize()
+end
+
+function Dropdown:UpdateSelectedOption()
+    self.DropdownButton.Text = self.SelectedOption or "Select Option"
+end
+
+function Dropdown:UpdateListSize()
+     local numOptions = #self.Options
+     local optionHeight = 30
+     local maxHeight = 200
+     local listHeight = math.min(numOptions * optionHeight, maxHeight)
+     self.DropdownList.Size = UDim2.new(1, 0, 0, listHeight)
+end
+
+-- Checkbox Class
+local Checkbox = {}
+Checkbox.__index = Checkbox
+setmetatable(Checkbox, UIElement)
+
+--- Creates a new Checkbox element.
+-- @param params table A table of properties for the Checkbox:
+--                       - `Text` (string, optional): The text of the checkbox.
+--                       - `Checked` (bool, optional): Whether the checkbox is checked.
+--                       - `Font` (Enum.Font, optional): The font of the text.
+--                       - `TextSize` (number, optional): The size of the text.
+--                       - `TextColor3` (Color3, optional): The color of the text.
+--                       - `BackgroundColor3` (Color3, optional): Background color.
+--                       - `CheckColor` (Color3, optional): Color of the check
+--                       - All properties from UIElement.new.
+-- @return Checkbox The new Checkbox.
+function Checkbox.new(params)
+    local self = setmetatable(UIElement.new(params), Checkbox)
+    self.Instance.BackgroundColor3 = self.UI.Theme.CheckboxColor
+    self.Instance.ClipsDescendants = true
+
+    self.Text = params.Text or ""
+    self.Checked = params.Checked or false
+    self.Font = params.Font or "Arial"
+    self.TextSize = params.TextSize or 14
+    self.TextColor = params.TextColor3 or self.UI.Theme.TextColor
+    self.CheckColor = params.CheckColor or Color3.fromRGB(0, 255, 0)
+
+    self.CheckboxButton = nil
+    self.CheckboxLabel = nil
+    self.CheckMark = nil
+
+    self:CreateCheckboxButton()
+    self:CreateCheckboxLabel()
+    self:CreateCheckMark()
+    self:ApplyStyle(params)
+    self:UpdateCheckMarkVisibility()
+    self:ConnectEvents()
+
+    return self
+end
+
+function Checkbox:ApplyStyle(style)
+    UIElement:ApplyStyle(style)
+     if not style then return end
+    if style.Text then
+        self.Text = style.Text
+        self.CheckboxLabel.Text = self.Text
+    end
+    if style.Font then
+        self.Font = style.Font
+        self.CheckboxLabel.Font = self.Font
+    end
+    if style.TextSize then
+        self.TextSize = style.TextSize
+        self.CheckboxLabel.TextSize = style.TextSize
+    end
+    if style.TextColor then
+        self.TextColor = style.TextColor
+        self.CheckboxLabel.TextColor3 = style.TextColor
+    end
+    if style.CheckColor then
+        self.CheckColor = style.CheckColor
+        self.CheckMark.ImageColor3 = self.CheckColor
+    end
+end
+
+function Checkbox:CreateCheckboxButton()
+    self.CheckboxButton = Instance.new("Frame", self.Instance)
+    self.CheckboxButton.Size = UDim2.new(0, 20, 0, 20)
+    self.CheckboxButton.Position = UDim2.new(0, 0, 0.5, -10)
+    self.CheckboxButton.BackgroundColor3 = self.UI.Theme.CheckboxColor
+    self.CheckboxButton.BorderColor3 = self.UI.Theme.BorderColor
+    self.CheckboxButton.BorderSizePixel = 1
+    self.CheckboxButton.ClipsDescendants = true
+end
+
+function Checkbox:CreateCheckboxLabel()
+    self.CheckboxLabel = Label.new({
+        Name = "CheckboxLabel",
+        Text = self.Text,
+        Font = self.Font,
+        TextSize = self.TextSize,
+        TextColor3 = self.TextColor,
+        Position = UDim2.new(0, 30, 0, 0), -- Position to the right of the box
+        Parent = self.Instance,
+        BackgroundColor3 = Color3.new(1,1,1),
+        BackgroundTransparency = 1,
+    })
+    self.CheckboxLabel.Instance.AnchorPoint = Vector2.new(0, 0.5)
+    self.CheckboxLabel.Instance.Position = UDim2.new(0, 30, 0.5, -self.CheckboxLabel.Instance.Size.Y.Offset/2)
+end
+
+function Checkbox:CreateCheckMark()
+    self.CheckMark = Instance.new("ImageLabel", self.CheckboxButton)
+    self.CheckMark.Size = UDim2.new(0, 16, 0, 16)
+    self.CheckMark.Position = UDim2.new(0.5, -8, 0.5, -8)
+    self.CheckMark.Image = "rbxassetid://1034446766" -- Checkmark icon
+    self.CheckMark.BackgroundTransparency = 1
+    self.CheckMark.ImageColor3 = self.CheckColor
+    self.CheckMark.Visible = self.Checked
+end
+
+function Checkbox:UpdateCheckMarkVisibility()
+    self.CheckMark.Visible = self.Checked
+end
+
+function Checkbox:ConnectEvents()
+    self.EventConnections.CheckboxClick = self.CheckboxButton.MouseButton1Click:Connect(function()
+        self.Checked = not self.Checked
+        self:UpdateCheckMarkVisibility()
+        if self.OnChanged then
+            self.OnChanged(self.Checked)
+        end
+    end)
+end
+
+-- Slider Class
+local Slider = {}
+Slider.__index = Slider
+setmetatable(Slider, UIElement)
+
+--- Creates a new Slider element.
+-- @param params table A table of properties for the Slider:
+--                       - `MinValue` (number, optional): The minimum value of the slider.
+--                       - `MaxValue` (number, optional): The maximum value of the slider.
+--                       - `Value` (number, optional): The initial value of the slider.
+--                       - `Step` (number, optional): The step size of the slider.
+--                       - `SliderBarColor` (Color3, optional): Color of slider bar
+--                       - `SliderThumbColor` (Color3, optional) : Color of slider thumb
+--                       - All properties from UIElement.new.
+-- @return Slider The new Slider.
+function Slider.new(params)
+    local self = setmetatable(UIElement.new(params), Slider)
+    self.Instance.ClipsDescendants = true
+
+    self.MinValue = params.MinValue or 0
+    self.MaxValue = params.MaxValue or 100
+    self.Value = params.Value or 0
+    self.Step = params.Step or 1
+    self.SliderBarColor = params.SliderBarColor or self.UI.Theme.SliderBarColor
+    self.SliderThumbColor = params.SliderThumbColor or self.UI.Theme.SliderThumbColor
+
+    self.Bar = nil
+    self.Thumb = nil
+    self.Dragging = false
+    self.DragStartPos = 0
+    self.StartValue = 0
+
+    self:CreateBar()
+    self:CreateThumb()
+    self:ApplyStyle(params)
+    self:UpdateThumbPosition()
+    self:ConnectEvents()
+
+    return self
+end
+
+function Slider:ApplyStyle(style)
+    UIElement:ApplyStyle(style)
+     if not style then return end
+
+    if style.SliderBarColor then
+        self.SliderBarColor = style.SliderBarColor
+        self.Bar.BackgroundColor3 = self.SliderBarColor
+    end
+    if style.SliderThumbColor then
+        self.SliderThumbColor = style.SliderThumbColor
+        self.Thumb.BackgroundColor3 = self.SliderThumbColor
+    end
+end
+
+function Slider:CreateBar()
+    self.Bar = Instance.new("Frame", self.Instance)
+    self.Bar.Size = UDim2.new(1, -30, 0, 8)
+    self.Bar.Position = UDim2.new(0, 15, 0.5, -4)
+    self.Bar.BackgroundColor3 = self.SliderBarColor
+    self.Bar.BorderColor3 = self.UI.Theme.BorderColor
+    self.Bar.BorderSizePixel = 1
+end
+
+function Slider:CreateThumb()
+    self.Thumb = Instance.new("Frame", self.Instance)
+    self.Thumb.Size = UDim2.new(0, 20, 0, 20)
+    self.Thumb.Position = UDim2.new(0, 0, 0.5, -10)
+    self.Thumb.BackgroundColor3 = self.SliderThumbColor
+    self.Thumb.Shape = Enum.PartType.Sphere
+    self.Thumb.ZIndex = 2
+end
+
+function Slider:UpdateThumbPosition()
+    local barWidth = self.Bar.AbsoluteSize.X
+    local thumbWidth = self.Thumb.AbsoluteSize.X
+    local availableWidth = barWidth - thumbWidth
+    local valuePercent = (self.Value - self.MinValue) / (self.MaxValue - self.MinValue)
+    local thumbX = valuePercent * availableWidth
+    self.Thumb.Position = UDim2.new(0, thumbX + 10, 0.5, -10)
+end
+
+function Slider:ConnectEvents()
+    local inputBeganConnection
+    local inputChangedConnection
+    local inputEndedConnection
+
+    local function onInputBegan(input, gameProcessedEvent)
+        if gameProcessedEvent then return end
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            local pos = input.Position
+            local absPos = self.Bar.AbsolutePosition
+            local absSize = self.Bar.AbsoluteSize
+
+            if pos.X >= absPos.X and pos.X <= absPos.X + absSize.X and
+               pos.Y >= absPos.Y and pos.Y <= absPos.Y + absSize.Y then
+                self.Dragging = true
+                self.DragStartPos = pos.X
+                self.StartValue = self.Value
+            end
+        end
+    end
+
+    local function onInputChanged(input)
+        if self.Dragging then
+            local barWidth = self.Bar.AbsoluteSize.X
+            local deltaX = input.Position.X - self.DragStartPos
+            local valueRange = self.MaxValue - self.MinValue
+            local valuePerPixel = valueRange / barWidth
+            local newValue = self.StartValue + deltaX * valuePerPixel
+
+            self.Value = math.clamp(newValue, self.MinValue, self.MaxValue)
+            self.Value = self.MinValue + math.round((self.Value - self.MinValue) / self.Step) * self.Step
+            self:UpdateThumbPosition()
+            if self.OnChanged then
+                self.OnChanged(self.Value)
+            end
+        end
+    end
+
+    local function onInputEnded(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            self.Dragging = false
+        end
+    end
+
+    inputBeganConnection = game:GetService("UserInputService").InputBegan:Connect(onInputBegan)
+    inputChangedConnection = game:GetService("UserInputService").InputChanged:Connect(onInputChanged)
+    inputEndedConnection = game:GetService("UserInputService").InputEnded:Connect(onInputEnded)
+
+    self.EventConnections = {
+        inputBeganConnection = inputBeganConnection,
+        inputChangedConnection = inputChangedConnection,
+        inputEndedConnection = inputEndedConnection,
+    }
+end
+
+-- UI Class (Main Class)
+local UI = {}
+UI.__index = UI
+
+--- Creates a new UI instance.
+-- @param config table A configuration table.  See DEFAULT_CONFIG for available options.
+-- @return UI The new UI instance.
+function UI.new(config)
+    local self = setmetatable({}, UI)
+    self.Config = {}
+    for k, v in pairs(DEFAULT_CONFIG) do
+        self.Config[k] = config[k] or v
+    end
+    self.Name = self.Config.ScriptName
+    self.Creator = self.Config.Creator
+    self.Root = Instance.new("ScreenGui")
+    self.Root.Name = self.Name
+    self.Root.ResetOnSpawn = false
+    self.Theme = THEMES[self.Config.Theme] or THEMES.Dark -- Default to Dark if invalid theme.
+    self.Windows = {}
+    self.Elements = {} -- Keep track of all elements.
+
+     -- Set the global UI instance.  This is a convenience for accessing
+    -- the UI from other scripts, but it's generally better to pass the
+    -- UI object around explicitly.
+    _G[self.Name] = self
+
+    if self.Config.AutoLoad then
+        self:Load()
+    end
+
+    return self
+end
+
+--- Loads the UI by parenting it to the PlayerGui.
+function UI:Load()
+    local player = game.Players.LocalPlayer
+    if player then
+        self.Root.Parent = player.PlayerGui
+    else
+        warn("UI:Load - Player not found.  Make sure to call this from a LocalScript.")
+    end
+end
+
+--- Unloads the UI by destroying it.
+function UI:Unload()
+    self.Root:Destroy()
+end
+
+--- Creates a new window.
+-- @param params table A table of window parameters.
+-- @return Window The new Window.
+function UI:CreateWindow(params)
+    params.Parent = self.Root
+    local window = Window.new(params)
+    window.UI = self  -- Set a reference to the UI instance.
+    table.insert(self.Windows, window)
+    table.insert(self.Elements, window)
+    return window
+end
+
+--- Creates a new label.
+-- @param params table
+-- @return Label
+function UI:CreateLabel(params)
+    params.Parent = self.Root
+    local label = Label.new(params)
+    label.UI = self
+    table.insert(self.Elements, label)
+    return label
+end
+
+--- Creates a new button.
+-- @param params table
+-- @return Button
+function UI:CreateButton(params)
+    params.Parent = self.Root
+    local button = Button.new(params)
+    button.UI = self
+    table.insert(self.Elements, button)
+    return button
+end
+
+--- Creates a new input field.
+-- @param params table
+-- @return InputField
+function UI:CreateInputField(params)
+    params.Parent = self.Root
+    local inputField = InputField.new(params)
+    inputField.UI = self
+    table.insert(self.Elements, inputField)
+    return inputField
+end
+
+--- Creates a new dropdown.
+-- @param params table
+-- @return Dropdown
+function UI:CreateDropdown(params)
+    params.Parent = self.Root
+    local dropdown = Dropdown.new(params)
+    dropdown.UI = self
+    table.insert(self.Elements, dropdown)
+    return dropdown
+end
+
+--- Creates a new checkbox.
+-- @param params table
+-- @return Checkbox
+function UI:CreateCheckbox(params)
+    params.Parent = self.Root
+    local checkbox = Checkbox.new(params)
+    checkbox.UI = self
+    table.insert(self.Elements, checkbox)
+    return checkbox
+end
+
+--- Creates a new slider.
+-- @param params table
+-- @return Slider
+function UI:CreateSlider(params)
+    params.Parent = self.Root
+    local slider = Slider.new(params)
+    slider.UI = self
+    table.insert(self.Elements, slider)
+    return slider
+end
+
+--- Gets a window by its title.
+-- @param title string The title of the window.
+-- @return Window The Window object, or nil if not found.
+function UI:GetWindow(title)
+    for _, window in pairs(self.Windows) do
+        if window.Title == title then
+            return window
+        end
+    end
+    return nil
+end
+
+--- Gets an element by its name
+-- @param name string
+-- @return UIElement
+function UI:GetElement(name)
+    for _, element in pairs(self.Elements) do
+        if element.Name == name then
+            return element
+        end
+    end
+    return nil
+end
+
+return UI
