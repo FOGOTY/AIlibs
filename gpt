@@ -1,1 +1,97 @@
+-- ModuleScript: "FoggyUI" or whatever name you want
 
+local TweenService = game:GetService("TweenService")
+
+local FoggyUI = {}
+FoggyUI.Config = {
+    ScriptName = "FoggyUI",
+    ScriptVersion = "1.0",
+    Features = {}
+}
+
+-- Easy function to add features
+function FoggyUI:AddFeature(name, data)
+    self.Config.Features[name] = data
+end
+
+-- Create the main UI window
+function FoggyUI:CreateWindow(config)
+    config = config or {}
+
+    local ScreenGui = Instance.new("ScreenGui")
+    ScreenGui.Name = config.ScriptName or self.Config.ScriptName
+    ScreenGui.ResetOnSpawn = false
+    ScreenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+
+    local MainFrame = Instance.new("Frame")
+    MainFrame.Size = UDim2.new(0, 500, 0, 400)
+    MainFrame.Position = UDim2.new(0.5, -250, 0.5, -200)
+    MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+    MainFrame.BorderSizePixel = 0
+    MainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+    MainFrame.Parent = ScreenGui
+
+    -- Smooth show animation
+    MainFrame.Size = UDim2.new(0, 0, 0, 0)
+    TweenService:Create(MainFrame, TweenInfo.new(0.6, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+        Size = UDim2.new(0, 500, 0, 400)
+    }):Play()
+
+    return {
+        AddTab = function(self, tabName)
+            local TabButton = Instance.new("TextButton")
+            TabButton.Size = UDim2.new(0, 100, 0, 30)
+            TabButton.Position = UDim2.new(0, (#MainFrame:GetChildren() - 1) * 110, 0, 10)
+            TabButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+            TabButton.Text = tabName
+            TabButton.Parent = MainFrame
+
+            local TabFrame = Instance.new("Frame")
+            TabFrame.Size = UDim2.new(1, -20, 1, -50)
+            TabFrame.Position = UDim2.new(0, 10, 0, 40)
+            TabFrame.BackgroundTransparency = 1
+            TabFrame.Visible = false
+            TabFrame.Parent = MainFrame
+
+            TabButton.MouseButton1Click:Connect(function()
+                for _, child in ipairs(MainFrame:GetChildren()) do
+                    if child:IsA("Frame") and child ~= MainFrame then
+                        child.Visible = false
+                    end
+                end
+                TabFrame.Visible = true
+            end)
+
+            return {
+                AddButton = function(self, buttonText, callback)
+                    local Button = Instance.new("TextButton")
+                    Button.Size = UDim2.new(0, 200, 0, 40)
+                    Button.Position = UDim2.new(0, 10, 0, (#TabFrame:GetChildren()) * 50)
+                    Button.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+                    Button.Text = buttonText
+                    Button.Parent = TabFrame
+
+                    Button.MouseButton1Click:Connect(callback)
+                end,
+                
+                AddToggle = function(self, toggleText, callback)
+                    local Toggle = Instance.new("TextButton")
+                    Toggle.Size = UDim2.new(0, 200, 0, 40)
+                    Toggle.Position = UDim2.new(0, 10, 0, (#TabFrame:GetChildren()) * 50)
+                    Toggle.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+                    Toggle.Text = toggleText .. ": OFF"
+                    Toggle.Parent = TabFrame
+
+                    local state = false
+                    Toggle.MouseButton1Click:Connect(function()
+                        state = not state
+                        Toggle.Text = toggleText .. ": " .. (state and "ON" or "OFF")
+                        callback(state)
+                    end)
+                end
+            }
+        end
+    }
+end
+
+return FoggyUI
